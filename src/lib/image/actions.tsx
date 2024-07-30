@@ -1,15 +1,14 @@
 "use server";
 import { image1, image2, image3, image4 } from "@/assets/images";
 import { cosineSimilarity } from "ai";
-import { ImageCompareWinner, ImagesCompares } from "../types";
+import {
+  ImageCompareWinner,
+  ImagesCompares,
+  ImageVectorResponse,
+} from "../types";
 
 interface ImageBase64 {
   content: string;
-}
-
-interface ImageVectorRequest {
-  vector: number[];
-  modelVersion: string;
 }
 
 //Azure AI Vision credentials
@@ -41,7 +40,7 @@ export async function compareVectors({ content }: ImageBase64) {
   }
   const win = Math.max(...similarityImage.map((image) => image.similarity));
   const winner: ImageCompareWinner = {
-    content: similarityImage,
+    content: similarityImage.sort((a, b) => b.similarity - a.similarity),
     winner: win,
     imageWinner:
       similarityImage.find((winner) => winner.similarity === win)?.content ||
@@ -52,7 +51,7 @@ export async function compareVectors({ content }: ImageBase64) {
 
 async function requestImageVectors({
   content,
-}: ImageBase64): Promise<ImageVectorRequest> {
+}: ImageBase64): Promise<ImageVectorResponse> {
   const blobImage = await convert(content);
   const response = await fetch(vectorize_img_url, {
     method: "POST",
@@ -67,20 +66,4 @@ async function requestImageVectors({
 
 async function convert(params: string) {
   return await fetch(params).then((res) => res.blob());
-}
-
-function getFileFromBase64(string64: string, fileName: string) {
-  const base64 = string64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-
-  const imageContent = atob(base64);
-  const buffer = new ArrayBuffer(imageContent.length);
-  const view = new Uint8Array(buffer);
-
-  for (let n = 0; n < imageContent.length; n++) {
-    view[n] = imageContent.charCodeAt(n);
-  }
-  const type = "image/jpeg";
-  const blob = new Blob([buffer], { type });
-
-  return blob;
 }

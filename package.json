@@ -12,6 +12,7 @@
     "@ai-sdk/azure": "^0.0.17",
     "ai": "^3.2.16",
     "clsx": "^2.1.1",
+    "embla-carousel-react": "^8.1.7",
     "jimp": "^0.22.12",
     "nanoid": "^5.0.7",
     "next": "14.2.5",

@@ -1,12 +1,12 @@
 "use client";
 
-import { useStreamableText } from "@/lib/hooks/use-streamable-text";
-import { StreamableValue } from "ai/rsc";
 import { MemoizedReactMarkdown } from "./markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { IconOpenAI } from "./icons";
 import { spinner } from "./spinner";
+import { StreamableValue } from "ai/rsc";
+import { useStreamableText } from "@/lib/hooks/use-streamable-text";
 
 export function BotMessage({
   content,

@@ -1,18 +1,32 @@
 "use server";
 
-import { ReactNode } from "react";
 import {
   createAI,
-  streamUI,
   createStreamableValue,
   getMutableAIState,
+  streamUI,
 } from "ai/rsc";
 import { azure } from "@ai-sdk/azure";
-import { nanoid } from "nanoid";
-import { BotMessage, SpinnerMessage } from "@/components/message";
+import { ReactNode } from "react";
 import { z } from "zod";
+import { generateId } from "ai";
+import { BotMessage } from "@/components/message";
 import { IdentifyImage } from "@/components/identifyImg";
 
+export interface ServerMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ClientMessage {
+  id: string;
+  role: "user" | "assistant";
+  display: ReactNode;
+}
+
+const LoadingComponentPerson = () => (
+  <div className="animate-pulse p-4">Person identify...</div>
+);
 export async function submitUserMessage(
   contentImage: string
 ): Promise<ClientMessage> {
@@ -25,7 +39,6 @@ export async function submitUserMessage(
 
   const result = await streamUI({
     model: azure("chat4o"),
-    initial: <SpinnerMessage />,
     messages: [
       ...history.get(),
       {
@@ -39,9 +52,10 @@ export async function submitUserMessage(
                   2. Describe los objetos principales y su disposición.\n
                   3. Identifica el contexto del fotograma de vídeo (por ejemplo, entorno de trabajo, escena exterior).\n
                   4. Indica cualquier observación destacable sobre la iluminación, los colores y la composición general.
-                  5. Si detectas personas que estan en el entorno llama a la funcion personInEnviroment.\n
-                  6. Detecta los animales que estan en el entorno.\n
-                  7. Formato utilizado markdown.\n
+                  5. Detecta los animales que estan en el entorno.\n
+                  6. Detecta las figuras que estan en la imagen y proporciona de que serie son o pelicula.\n
+                  7. Llama a la función personInEnviroment si identificas personas presentes en la imagen solo si estan en primer plano y describe su apariencia y acciones.\n
+                  8. Formato utilizado markdown.\n
                   Aquí tienes el fotograma de vídeo: Analiza esta imagen`,
           },
           {
@@ -58,11 +72,11 @@ export async function submitUserMessage(
       }
 
       if (done) {
+        textStream.done();
         history.done((messages: ServerMessage[]) => [
           ...messages,
           { role: "assistant", content },
         ]);
-        textStream.done();
       } else {
         textStream.update(delta);
       }
@@ -73,15 +87,25 @@ export async function submitUserMessage(
       personInEnviroment: {
         description: "Detecta las personas en el entorno.",
         parameters: z.object({
-          texto: z.string().describe("Descripcion de la persona"),
+          texto: z.string().describe("Describe su apariencia y acciones"),
         }),
         generate: async function* ({ texto }) {
+          yield <LoadingComponentPerson />;
+          history.done((messages: ServerMessage[]) => [
+            ...messages,
+            {
+              role: "assistant",
+              content: "personInEnviroment",
+            },
+          ]);
+
           return (
             <div>
-              {texto}{" "}
-              <>
-                <IdentifyImage content={contentImage} />
-              </>
+              <h1 className="text-2xl font-bold text-card-foreground">
+                Description:
+              </h1>
+              <BotMessage content={texto} />
+              <IdentifyImage content={contentImage} />
             </div>
           );
         },
@@ -90,27 +114,20 @@ export async function submitUserMessage(
   });
 
   return {
-    id: nanoid(),
+    id: generateId(),
     role: "assistant",
     display: result.value,
   };
 }
 
-export interface ServerMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface ClientMessage {
-  id: string;
-  role: "user" | "assistant";
-  display: ReactNode;
-}
-
-export const AI = createAI<ServerMessage[], ClientMessage[]>({
+export const AI = createAI<ServerMessage[], ClientMessage>({
   actions: {
     submitUserMessage,
   },
   initialAIState: [],
-  initialUIState: [],
+  initialUIState: {
+    id: generateId(),
+    role: "assistant",
+    display: null,
+  },
 });

@@ -50,3 +50,8 @@ export interface ImagesCompares {
   similarity: number;
   content: string;
 }
+
+export interface ImageVectorResponse {
+  vector: number[];
+  modelVersion: string;
+}
