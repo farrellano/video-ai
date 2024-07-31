@@ -1,5 +1,5 @@
 "use server";
-import { image1, image2, image3, image4 } from "@/assets/images";
+import { image1, image2, image3, image4, image5 } from "@/assets/images";
 import { cosineSimilarity } from "ai";
 import {
   ImageCompareWinner,
@@ -28,7 +28,7 @@ export async function compareVectors({ content }: ImageBase64) {
   const requestVector = await requestImageVectors({ content });
   const similarityImage: ImagesCompares[] = [];
 
-  for (const image of [image1, image2, image3, image4]) {
+  for (const image of [image1, image2, image3, image4, image5]) {
     const requestVectorImages = await requestImageVectors({ content: image });
     similarityImage.push({
       similarity: cosineSimilarity(
